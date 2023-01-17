@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Table } from '@finos/perspective';
+import { Table, TableData } from '@finos/perspective';
 import { ServerRespond } from './DataStreamer';
 import { DataManipulator } from './DataManipulator';
 import './Graph.css';
@@ -45,6 +45,7 @@ class Graph extends Component<IProps, {}> {
       elem.setAttribute('aggregates', JSON.stringify({
         price_abc: 'avg',
         price_def: 'avg',
+        ratio: 'avg',
         timestamp: 'distinct count',
         upper_bound: 'avg',
         lower_bound: 'avg',
@@ -57,7 +58,7 @@ class Graph extends Component<IProps, {}> {
     if (this.table) {
       this.table.update([
         DataManipulator.generateRow(this.props.data),
-      ]);
+      ] as unknown as TableData);
     }
   }
 }
