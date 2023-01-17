@@ -1,0 +1,103 @@
+From 2d1271d494f71172a03815d3d5ca7cce1fdd8835 Mon Sep 17 00:00:00 2001
+From: sanya-mahajan <sanyamahajan08@gmail.com>
+Date: Tue, 17 Jan 2023 18:59:48 +0530
+Subject: [PATCH] patch
+
+---
+ src/App.tsx            |  2 +-
+ src/DataManipulator.ts | 35 ++++++++++++++++++++++++-----------
+ src/Graph.tsx          |  5 +++--
+ 3 files changed, 28 insertions(+), 14 deletions(-)
+
+diff --git a/src/App.tsx b/src/App.tsx
+index 274d20b..4d2a966 100755
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -56,4 +56,4 @@ class App extends Component<{}, IState> {
+   }
+ }
+ 
+-export default App;
++export default App;
+\ No newline at end of file
+diff --git a/src/DataManipulator.ts b/src/DataManipulator.ts
+index 7f62295..4d479aa 100644
+--- a/src/DataManipulator.ts
++++ b/src/DataManipulator.ts
+@@ -1,20 +1,33 @@
+ import { ServerRespond } from './DataStreamer';
+ 
+ export interface Row {
+-  stock: string,
+-  top_ask_price: number,
++  price_abc: number,
++  price_def: number,
++  ratio: number,
+   timestamp: Date,
++  upper_bound: number,
++  lower_bound: number,
++  trigger_alert: number | undefined,
++  
+ }
+ 
+-
+ export class DataManipulator {
+-  static generateRow(serverResponds: ServerRespond[]) {
+-    return serverResponds.map((el: any) => {
+-      return {
+-        stock: el.stock,
+-        top_ask_price: el.top_ask && el.top_ask.price || 0,
+-        timestamp: el.timestamp,
++  static generateRow(serverResponds: ServerRespond[]): Row {
++    const priceABC = (serverResponds[0].top_ask.price + serverResponds[0].top_bid.price)/2;
++    const priceDEF = (serverResponds[1].top_ask.price + serverResponds[1].top_bid.price)/2;
++    const ratio = priceABC / priceDEF;
++    const upper_bound = 1 + 0.01;
++    const lower_bound = 1 - 0.01;
++    return {
++      price_abc: priceABC,
++      price_def: priceDEF,
++      ratio,
++      timestamp: serverResponds[0].timestamp > serverResponds[1].timestamp ?
++                  serverResponds[0].timestamp : serverResponds[1].timestamp,
++      upper_bound: upper_bound,
++      lower_bound: lower_bound,
++      trigger_alert: (ratio > upper_bound || ratio < lower_bound ) ? ratio : undefined,
++
+       };
+-    })
+   }
+-}
++}
+\ No newline at end of file
+diff --git a/src/Graph.tsx b/src/Graph.tsx
+index 24b8d25..6f5ee5c 100644
+--- a/src/Graph.tsx
++++ b/src/Graph.tsx
+@@ -1,5 +1,5 @@
+ import React, { Component } from 'react';
+-import { Table } from '@finos/perspective';
++import { Table, TableData } from '@finos/perspective';
+ import { ServerRespond } from './DataStreamer';
+ import { DataManipulator } from './DataManipulator';
+ import './Graph.css';
+@@ -45,6 +45,7 @@ class Graph extends Component<IProps, {}> {
+       elem.setAttribute('aggregates', JSON.stringify({
+         price_abc: 'avg',
+         price_def: 'avg',
++        ratio: 'avg',
+         timestamp: 'distinct count',
+         upper_bound: 'avg',
+         lower_bound: 'avg',
+@@ -57,7 +58,7 @@ class Graph extends Component<IProps, {}> {
+     if (this.table) {
+       this.table.update([
+         DataManipulator.generateRow(this.props.data),
+-      ]);
++      ] as unknown as TableData);
+     }
+   }
+ }
+-- 
+2.34.1
+
